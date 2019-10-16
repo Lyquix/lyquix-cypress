@@ -7,7 +7,7 @@
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
     "cypress:report": "bash ./report.sh",
-    "cypress:visual": "set PERCY_TOKEN=mytoken && percy exec -- cypress run --spec \"cypress/integration/visual.spec.js\""
+    "cypress:visual": "set PERCY_TOKEN=mytoken && percy exec -- cypress run --spec \"cypress/integration/visual*\""
   },
   "author": "Lyquix",
   "license": "GNU",
