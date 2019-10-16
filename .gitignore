@@ -1,0 +1,25 @@
+###
+#
+# .gitignore - List of files to prevent from tracking in repo
+#
+# @version     1.0.0
+# @package     lyquix-tests
+# @author      lyquix
+# @copyright   Copyright (C) 2015 - 2018 Lyquix
+# @license     GNU General Public License version 2 or later
+# @link        https://github.com/lyquix/lyquix-tests
+#
+###
+
+# gitignore common files
+.DS_Store
+Thumbs.db
+Desktop.ini
+node_modules
+package-lock.json
+
+# Cypress como files
+cypress/videos
+cypress/screenshots
+
+# Custom project files

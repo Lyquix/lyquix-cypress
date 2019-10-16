@@ -1,0 +1,36 @@
+{
+	"baseUrl": "https://example.com",
+	"testUrls": [
+		"https://example.com/"
+	],
+	"httpUser": "",
+	"httpPassword": "",
+	"screens": {
+		"xl": [1920,1080],
+		"lg": [1366,768],
+		"md": [1024,768],
+		"sm": [768,1024],
+		"xs": [375,667]
+	},
+	"axeRules": [
+		"wcag2a",
+		"wcag2aa",
+		"wcag21aa",
+		"section508",
+		"best-practice",
+		"experimental",
+		"cat.aria",
+		"cat.color",
+		"cat.forms",
+		"cat.keyboard",
+		"cat.language",
+		"cat.name-role-value",
+		"cat.parsing",
+		"cat.semantics",
+		"cat.sensory-and-visual-cues",
+		"cat.structure",
+		"cat.tables",
+		"cat.text-alternatives",
+		"cat.time-and-media"
+	]
+}
