@@ -13,6 +13,9 @@ options.testUrls.forEach((testUrl) => {
 		it('', () => {
 			cy.visit(testUrl, visitOptions);
 			Object.keys(options.screens).forEach((size) => {
+				cy.viewport(options.screens[size][0], options.screens[size][1]);
+				cy.wait(500);
+				cy.get('body[screen]').should('exist').invoke('attr', 'screen');
 				cy.percySnapshot('Snapshot on ' + size + ' at ' + testUrl, { widths: [options.screens[size][0]], minHeight: options.screens[size][1]});
 			});
 		});
