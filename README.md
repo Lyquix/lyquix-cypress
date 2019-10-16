@@ -4,7 +4,7 @@ Base setup to get started with cypress end-to-end website testing.
 
 ## Installation
 
-1. Download this repo and extract it within your project, in itw own folder, for example `/tests`
+1. Download this repo and extract it within your project, in its own folder, for example `/tests`
 
 2. Install dependencies with `npm install`
 
@@ -34,7 +34,7 @@ To generate HTML reports of the all tests
 npm run cypress:report
 ```
 
-To take visual snapshot of the project
+To run visual tests (all specs that match `cypress/integrations/visual*`)and take snapshots with Percy.io
 ```
 npm run cypress:visual
 ```
