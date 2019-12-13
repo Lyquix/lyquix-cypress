@@ -30,7 +30,8 @@ options.testUrls.forEach((testUrl) => {
 						href.indexOf('sms:') == 0 ||
 						href.indexOf('mailto:') == 0 ||
 						href.indexOf('ftp:') == 0 ||
-						href.indexOf('file:') == 0
+						href.indexOf('file:') == 0 ||
+						href.indexOf('javascript:') == 0
 					) allow = false;
 					if(href.indexOf('http') == 0 && href.indexOf(options.baseUrl) != 0) allow = false;
 					if(allow && !linksChecked.includes(href)) {
