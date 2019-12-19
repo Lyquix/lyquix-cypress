@@ -34,10 +34,13 @@ options.testUrls.forEach((testUrl) => {
 
 		it('Title tag', () => {
 			cy.get('title').should('exist').should('have.length', 1);
+			cy.expect(Cypress.$('title').text().length).to.be.within(10,70);
+
 		});
 
 		it('Meta description', () => {
 			cy.get('meta[name="description"]').should('exist').should('have.length', 1);
+			cy.expect(Cypress.$('meta[name="description"]').attr('content').length).to.be.within(50,320);
 		});
 
 		it('OpenGraph', () => {
