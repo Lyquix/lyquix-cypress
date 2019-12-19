@@ -1,4 +1,10 @@
 /// <reference types="Cypress" />
+// Prevent js error "resizeobserver loop limit" from breaking cypress tests
+Cypress.on('uncaught:exception', (err) => {
+  if(/^ResizeObserver loop limit exceeded/.test(err.message)) {
+    return false
+  }
+});
 
 const options = require('../fixtures/options')
 
