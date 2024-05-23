@@ -20,7 +20,8 @@ if('httpUser' in options && options.httpUser != '') requestOptions.auth = {
 	password: options.httpPassword
 };
 
-options.testUrls.forEach((testUrl) => {
+const testUrls = Cypress.env('url') ? [Cypress.env('url')] : options.testUrls;
+testUrls.forEach((testUrl) => {
 	describe('Broken Links on ' + testUrl, () => {
 		before(() => {
 			cy.visit(testUrl, visitOptions);

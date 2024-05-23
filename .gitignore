@@ -21,5 +21,6 @@ package-lock.json
 # Cypress como files
 cypress/videos
 cypress/screenshots
+cypress/reports
 
 # Custom project files

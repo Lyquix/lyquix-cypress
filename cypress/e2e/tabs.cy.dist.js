@@ -14,7 +14,8 @@ if('httpUser' in options && options.httpUser != '') visitOptions.auth = {
 	password: options.httpPassword
 };
 
-options.testUrls.forEach((testUrl) => {
+const testUrls = Cypress.env('url') ? [Cypress.env('url')] : options.testUrls;
+testUrls.forEach((testUrl) => {
 	describe('Accordions on ' + testUrl, function() {
 		before(() => {
 			cy.visit(testUrl, visitOptions);

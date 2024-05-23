@@ -19,3 +19,21 @@ import 'cypress-axe'
 
 // Alternatively you can use CommonJS syntax:
 // require('./commands')
+
+const addContext = require('mochawesome/addContext');
+
+Cypress.on('test:before:run', (test, runnable) => {
+    if (!window['extra']) {
+        window['extra'] = [];
+    }
+
+    if (!window['extra'][test.id]) {
+        window['extra'][test.id] = [];
+    }
+});
+
+Cypress.on('test:after:run', (test, runnable) => {
+    window['extra'][test.id].map((item) => {
+        addContext({ test }, item);
+    });
+});
