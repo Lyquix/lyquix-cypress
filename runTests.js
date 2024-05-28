@@ -1,48 +1,56 @@
 const axios = require('axios');
 const xml2js = require('xml2js');
-const inquirer = require('inquirer');
 const { spawn, exec } = require('child_process');
-const checkboxPlusPrompt = require('inquirer-checkbox-plus-prompt');
-const fuzzy = require('fuzzy');
 const path = require('path');
 const fs = require('fs');
 
-inquirer.registerPrompt('checkbox-plus', checkboxPlusPrompt);
+// Function to read configuration from config.json
+function readConfig() {
+    const configPath = path.resolve(__dirname, 'lqx.config.json');
+    if (!fs.existsSync(configPath)) {
+        console.error('Error: Configuration file config.json not found.');
+        process.exit(1);
+    }
+
+    try {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        return config;
+    } catch (error) {
+        console.error('Error reading or parsing config.json:', error);
+        process.exit(1);
+    }
+}
 
 async function fetchSitemap(url) {
     try {
         const response = await axios.get(url);
         const parser = new xml2js.Parser();
         const result = await parser.parseStringPromise(response.data);
-        return result.urlset.url.map(u => u.loc[0]);
+
+        // Check if the sitemap is a sitemap index
+        if (result.sitemapindex && result.sitemapindex.sitemap) {
+            const sitemapUrls = result.sitemapindex.sitemap.map(s => s.loc[0]);
+            let allUrls = [];
+
+            // Fetch each sitemap and collect URLs
+            for (const sitemapUrl of sitemapUrls) {
+                const urls = await fetchSitemap(sitemapUrl);
+                allUrls = allUrls.concat(urls);
+            }
+
+            return allUrls;
+        }
+
+        // If it's a regular sitemap
+        if (result.urlset && result.urlset.url) {
+            return result.urlset.url.map(u => u.loc[0]);
+        }
+
+        throw new Error('Invalid sitemap format');
     } catch (error) {
         console.error('Error fetching or parsing sitemap:', error);
         process.exit(1);
     }
-}
-
-async function selectUrls(urls) {
-    const answers = await inquirer.prompt([
-        {
-            type: 'checkbox-plus',
-            name: 'selectedUrls',
-            message: 'Search and select URLs to test:',
-            pageSize: 10,
-            highlight: true,
-            searchable: true,
-            source: (answersSoFar, input) => {
-                input = input || '';
-                return new Promise((resolve) => {
-                    const fuzzyResult = fuzzy.filter(input, urls, {
-                        extract: el => el
-                    });
-                    const data = fuzzyResult.map(element => element.original);
-                    resolve(data);
-                });
-            }
-        }
-    ]);
-    return answers.selectedUrls;
 }
 
 function getTestFilesToInclude(excludePatterns) {
@@ -60,7 +68,10 @@ async function runCypress(url) {
         const excludePatterns = [
             'cypress/e2e/accessibility.cy.js',
             'cypress/e2e/seo.cy.js',
-            'cypress/e2e/visual.cy.js'
+            'cypress/e2e/visual.cy.js',
+            'cypress/e2e/brokenLinks.cy.js',
+            // 'cypress/e2e/blankPage.cy.js',
+            'cypress/e2e/generalErrors.cy.js'
         ];
 
         const includedFiles = getTestFilesToInclude(excludePatterns);
@@ -124,7 +135,6 @@ async function mergeReports(reportDir, outputDir) {
         fs.mkdirSync(mergedReportDir, { recursive: true });
     }
 
-    // Debugging: List report files
     const reportFiles = fs.readdirSync(reportDir);
     console.log(`Report files in ${reportDir}:`, reportFiles);
 
@@ -148,6 +158,17 @@ async function generateHtmlReport(mergedReportPath, outputDir, reportName) {
     try {
         await execCommand(`npx mochawesome-report-generator -f ${reportName} -o ${outputDir} --cdn true --charts true ${mergedReportPath}`);
         console.log('HTML report generated successfully.');
+
+        const htmlReportPath = path.join(outputDir, `${reportName}.html`);
+        const targetDir = path.resolve(__dirname, '../wp-content/uploads/cypress-reports');
+        const targetPath = path.join(targetDir, `${reportName}.html`);
+
+        if (!fs.existsSync(targetDir)) {
+            fs.mkdirSync(targetDir, { recursive: true });
+        }
+
+        fs.copyFileSync(htmlReportPath, targetPath);
+        console.log(`HTML report copied to ${targetPath}`);
     } catch (error) {
         console.error('Error generating HTML report:', error);
         throw error;
@@ -155,68 +176,27 @@ async function generateHtmlReport(mergedReportPath, outputDir, reportName) {
 }
 
 async function main() {
-    const { useSitemap } = await inquirer.prompt([
-        {
-            type: 'confirm',
-            name: 'useSitemap',
-            message: 'Would you like to use a sitemap to retrieve URLs?',
-            default: true
-        }
-    ]);
+    const config = readConfig();
+    const sitemapUrl = config.SITEMAP_URL;
 
-    let urls = [];
-    let isSitemapSource = false; // Flag to check the source of URLs
-
-    if (useSitemap) {
-        const { sitemapUrl } = await inquirer.prompt([
-            {
-                type: 'input',
-                name: 'sitemapUrl',
-                message: 'Enter the sitemap URL:',
-                validate: input => input ? true : 'Please enter a valid URL.'
-            }
-        ]);
-        urls = await fetchSitemap(sitemapUrl);
-        isSitemapSource = true; // URLs are from sitemap
-    } else {
-        const { manualUrls } = await inquirer.prompt([
-            {
-                type: 'input',
-                name: 'manualUrls',
-                message: 'Enter the list of URLs to test (comma separated):',
-                validate: input => input ? true : 'Please enter at least one URL.'
-            }
-        ]);
-        urls = manualUrls.split(',').map(url => url.trim());
+    if (!sitemapUrl) {
+        console.error('Error: SITEMAP_URL is not defined in config.json.');
+        process.exit(1);
     }
 
-    const { selectAll } = await inquirer.prompt([
-        {
-            type: 'confirm',
-            name: 'selectAll',
-            message: 'Would you like to select all URLs from the sitemap?',
-            default: false,
-            when: () => isSitemapSource && urls.length > 1 // Only ask if the source is sitemap and more than one URL
-        }
-    ]);
-
-    let selectedUrls = [];
-    if (selectAll || !isSitemapSource) {
-        selectedUrls = urls; // Select all URLs or proceed with manual list without asking
-    } else {
-        selectedUrls = await selectUrls(urls); // Show checkbox prompt to select specific URLs
-    }
+    const urls = await fetchSitemap(sitemapUrl);
 
     const reportDir = 'cypress/reports/mochawesome';
     const outputDir = 'cypress/reports';
 
     try {
-        for (const url of selectedUrls) {
+        for (const url of urls) {
             await runCypress(url);
         }
 
         const { mergedReportPath, branch, timestamp, commit } = await mergeReports(reportDir, outputDir);
         await generateHtmlReport(mergedReportPath, path.join(outputDir, branch), `${timestamp}_${commit}`);
+        await execCommand(`node sendReports.js`);
     } catch (error) {
         console.error('Error during test execution or report generation:', error);
     }

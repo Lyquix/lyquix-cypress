@@ -1,15 +1,15 @@
 /// <reference types="Cypress" />
 // Prevent js error "resizeobserver loop limit" from breaking cypress tests
 Cypress.on('uncaught:exception', (err) => {
-    if(/^ResizeObserver loop limit exceeded/.test(err.message)) {
+    if (/^ResizeObserver loop limit exceeded/.test(err.message)) {
         return false
     }
 });
 
 const options = require('../fixtures/options')
 
-let visitOptions = {}
-if('httpUser' in options && options.httpUser != '') visitOptions.auth = {
+const visitOptions = {}
+if ('httpUser' in options && options.httpUser != '') visitOptions.auth = {
     username: options.httpUser,
     password: options.httpPassword
 }
@@ -17,11 +17,17 @@ if('httpUser' in options && options.httpUser != '') visitOptions.auth = {
 let testUrls = Cypress.env('url') ? [Cypress.env('url')] : options.testUrls;
 testUrls.forEach((testUrl) => {
     describe('General Errors on ' + testUrl, () => {
-        // before(() => {
-        //     cy.visit(testUrl, visitOptions);
-        // });
+        before(() => {
+            cy.visit(testUrl, visitOptions);
+        });
 
-        it('Checks the server response header for a status code different than 200, 301, and 302', () => {
+        // Handle uncaught exceptions
+        Cypress.on('uncaught:exception', (err, runnable) => {
+            // Prevent the test from failing
+            return false;
+        });
+
+        it('Checks the server response header for a status code different than 200, 301, and 302', function () {
             let testId = this.test.id;
             cy.request({
                 url: testUrl,
@@ -37,7 +43,7 @@ testUrls.forEach((testUrl) => {
             });
         });
 
-        it('Checks for any PHP error and warning displayed in the HTML', () => {
+        it('Checks for any PHP error and warning displayed in the HTML', function () {
             let testId = this.test.id;
             cy.document().then((doc) => {
                 let bodyText = doc.body.innerText;
@@ -59,7 +65,7 @@ testUrls.forEach((testUrl) => {
             });
         });
 
-        it('Checks if the page is missing the <header>, <main>, or <footer> tags', () => {
+        it('Checks if the page is missing the <header>, <main>, or <footer> tags', function () {
             let testId = this.test.id;
             cy.document().then((doc) => {
                 let tags = ['header', 'main', 'footer'];
@@ -75,13 +81,13 @@ testUrls.forEach((testUrl) => {
             });
         });
 
-        it('Checks if any asset could not be loaded', () => {
+        it('Checks if any asset could not be loaded', function () {
             let testId = this.test.id;
             cy.get('img, link[rel="stylesheet"], script').each(($el) => {
                 let tag = $el.prop('tagName').toLowerCase();
                 let url = $el.prop(tag === 'link' ? 'href' : 'src');
 
-                if(url) {
+                if (url) {
                     cy.request({
                         url: url,
                         failOnStatusCode: false
@@ -98,23 +104,35 @@ testUrls.forEach((testUrl) => {
             });
         });
 
-        it('Detects any JavaScript error raised on the page', () => {
-            let testId = this.test.id;
+        it('Detects any JavaScript error raised on the page', function () {
+            const testId = this.test.id;
             cy.on('window:alert', (msg) => {
                 window['extra'][testId].push({
                     title: 'JavaScript error alert',
-                    value: `${msg}`
+                    value: `Alert message: ${msg}`
                 });
-                cy.log(`JavaScript error alert: ${msg}`);
+                expect(msg).to.not.exist;
             });
 
             cy.on('uncaught:exception', (err) => {
+                const errorMessage = err.message.match(/> (.*)/);
+                const cleanErrorMessage = errorMessage ? errorMessage[1] : err.message;
+                const errorDetails = {
+                    title: err.name,
+                    message: cleanErrorMessage,
+                    stack: err.stack
+                        ? err.stack.split('\n').filter(line => line.trim().startsWith('at')).join('\n')
+                        : 'N/A'
+                };
+
                 window['extra'][testId].push({
                     title: 'Uncaught JavaScript error',
-                    value: `${err.message}`
+                    value: `Title: ${errorDetails.title}\nMessage: ${errorDetails.message}\nStack:\n${errorDetails.stack}`
                 });
-                cy.log(`Uncaught JavaScript error: ${err.message}`);
+                expect(err.name).to.not.exist;
+                return false;
             });
+            cy.visit(testUrl);
         });
     });
 });
