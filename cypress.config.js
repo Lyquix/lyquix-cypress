@@ -1,4 +1,5 @@
 const { defineConfig } = require('cypress')
+const { lighthouse, pa11y, prepareAudit } = require('cypress-audit');
 
 module.exports = defineConfig({
   reporter: 'cypress-multi-reporters',
@@ -6,10 +7,18 @@ module.exports = defineConfig({
     configFile: 'reporter.json',
   },
   e2e: {
-    // We've imported your old cypress plugins here.
-    // You may want to clean this up later by importing these.
     setupNodeEvents(on, config) {
-      return require('./cypress/plugins/index.js')(on, config)
+      on("before:browser:launch", (browser = {}, launchOptions) => {
+        prepareAudit(launchOptions);
+      });
+
+      on("task", {
+        lighthouse: lighthouse((lighthouseReport) => {
+          console.log(lighthouseReport); // Output the report for debugging
+          return lighthouseReport;
+        }),
+        pa11y: pa11y(),
+      });
     },
     testIsolation: false,
   },

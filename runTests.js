@@ -65,14 +65,7 @@ async function runCypress(url) {
     return new Promise(async (resolve, reject) => {
         console.log('Running Cypress tests for:', url);
 
-        const excludePatterns = [
-            'cypress/e2e/accessibility.cy.js',
-            'cypress/e2e/seo.cy.js',
-            'cypress/e2e/visual.cy.js',
-            'cypress/e2e/brokenLinks.cy.js',
-            // 'cypress/e2e/blankPage.cy.js',
-            'cypress/e2e/generalErrors.cy.js'
-        ];
+        const excludePatterns = [];
 
         const includedFiles = getTestFilesToInclude(excludePatterns);
         const specPattern = includedFiles.join(',');

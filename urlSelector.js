@@ -79,7 +79,8 @@ async function runCypress(url) {
         const excludePatterns = [
             'cypress/e2e/accessibility.cy.js',
             'cypress/e2e/seo.cy.js',
-            'cypress/e2e/visual.cy.js'
+            'cypress/e2e/visual.cy.js',
+            'cypress/e2e/lighthouse.cy.js',
         ];
 
         const includedFiles = getTestFilesToInclude(excludePatterns);
